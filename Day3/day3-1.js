@@ -1,41 +1,45 @@
-(() => {
-    const values = document.querySelector("body pre").innerHTML.split("\n")
-    // Remove the last empty element from the array
-    values.pop()
+var values = document.querySelector("body pre").innerHTML.split("\n")
+// Remove the last empty element from the array
+values.pop()
 
-    // e.g. [1518-07-18 23:57] Guard #157 begins shift
-    const log = values.map(entry => {
-        let action, id
-        if (entry.includes('wakes')) action = 'wakes'
-        else if (entry.includes('asleep')) action = 'asleep'
-        else {
-            action = 'shift'
-            id = entry.match(/#\d+/)[0]
-        }
+// e.g. #1075 @ 892,563: 21x17
+var claims = values.map(val => {
+    const splits = val.split(' ')
+    const id = splits[0] // #1075
+    const locationSplit = splits[2].split(',') // ["892", "563:"]
+    const size = splits[3].split('x') // ["21", "17"]
 
-        const timestamp = new Date(entry.match(/\[.*\]/)[0].substring(1).slice(0, -1))
-
-        return {
-            timestamp,
-            action,
-            id
-        }
-    }).sort((a, b) => a.timestamp - b.timestamp)
-
-    // Add ID for all entries
-    let currentId
-    log.forEach((entry, index) => {
-        if (entry.action === 'shift') currentId = entry.id
-        else {
-            entry.id = currentId
-        }
-    })
-
-    // Print sample
-    for (let i = 0; i < 20; i++) {
-        console.log(log[i])
+    const result = {
+        id,
+        left: Number(locationSplit[0]), // First index is left
+        top: Number(locationSplit[1].slice(0, -1)), // Remove the colon from the end of the last coordinate
+        width: Number(size[0]), // First index is width
+        height: Number(size[1]), // Second index is height
     }
-})()
 
-// "[1518-02-01 00:03] Guard #73 begins shift".match(/\[.*\]/)[0].replace(/(\[\])/, '')
-// "[1518-02-01 00:03] Guard #73 begins shift".match(/#\d+/)[0]
+    return result
+})
+
+var canvas = document.createElement('canvas')
+canvas.width = 1000
+canvas.height = 1000
+
+var ctx = canvas.getContext('2d')
+claims.forEach(claim => {
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+    ctx.fillRect(claim.left, claim.top, claim.width, claim.height)
+})
+
+var imgd = ctx.getImageData(0, 0, 1000, 1000);
+var pix = imgd.data;
+
+// Loop over each pixel and invert the color.
+var overlappingClaims = 0
+var alpha = 26 // This is the number in image that represents rgba 0.1
+for (var i = 0, n = pix.length; i < pix.length; i += 4) {
+    // Aplha is every 4th number in the image data
+    if (pix[i + 3] > alpha) overlappingClaims++
+}
+
+document.body.prepend(canvas)
+console.log("Total overlapping claims: ", overlappingClaims)
