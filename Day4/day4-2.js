@@ -14,7 +14,6 @@
         }
 
         const timestamp = new Date(entry.match(/\[.*\]/)[0].substring(1).slice(0, -1))
-
         return {
             timestamp,
             minutes: timestamp.getMinutes(),
@@ -41,18 +40,17 @@
             startOfNap = entry.minutes
         } else {
             const naptime = getRange(startOfNap, entry.minutes)
-            guards[currentGuard].totalNaptime += naptime.length
             naptime.forEach(m => guards[currentGuard].totalMinutes[m] = add(guards[currentGuard].totalMinutes[m]))
             startOfNap = undefined
         }
     })
 
-    let nextGuardToBeFired = Object.values(guards).sort((a, b) => b.totalNaptime - a.totalNaptime)[0]
-    
     let bestMinute = { key: -1, value: -1 }
-    Object.entries(nextGuardToBeFired.totalMinutes).map(([key, value]) => {
-        if (value > bestMinute.value) bestMinute = {key, value}
+    Object.entries(guards).map(([guardId, value]) => {
+        Object.entries(value.totalMinutes).map(([key, value]) => {
+            if (value > bestMinute.value) bestMinute = { key, value, guardId }
+        })
     })
 
-    console.log(`Checksum ${nextGuardToBeFired.id}*${bestMinute.key}: `, nextGuardToBeFired.id * bestMinute.key)
+    console.log(`Checksum ${bestMinute.guardId}*${bestMinute.key}: `, bestMinute.guardId * bestMinute.key)
 })()
