@@ -327,7 +327,7 @@ var test = (msg, expect, result) => {
     result = code(`#########,#G......#,#.E.#...#,#..##..G#,#...##..#,#...#...#,#.G...G.#,#.....G.#,#########`.split(','))
     console.log('Example 5')
 
-    test('It should have 18740 as the answer', 18740, reuslt.answer)
+    test('It should have 18740 as the answer', 18740, result.answer)
     test('It should have 20 rounds', 20, result.fullRounds)
     test('It should have 937 total hit points', 937, result.hitPoints)
     test('It should have the correct monsters', 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200', result.monsters)    
