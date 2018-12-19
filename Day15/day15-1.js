@@ -1,10 +1,6 @@
-(() => {
-    const rawInput = document.querySelector("body pre").innerHTML.split("\n")
-    // Remove the last empty element from the array
-    rawInput.pop()
-
+var code = (rawInput, verbose) => {
     const arena = rawInput.map(row => row.split(''))
-    const getInitiative = (x, y) => x * arena[x].length + y
+    const getInitiative = (x, y) => x * arena.length + y
     let monsters = []
     for (let x = 0; x < arena.length; x++) {
         for (let y = 0; y < arena[x].length; y++) {
@@ -22,14 +18,9 @@
         }
     }
 
-    // monsters = monsters.reduce((res, mon) => {const hasType = res.find(m => m.type === mon.type);if (!hasType) res.push(mon); return res }, [])
-
     const arenaHeight = arena.length
     const arenaWidth = arena[0].length
     
-    console.log('Arena size', arena[0].length, arena.length)
-    console.log(`Monsters: ${monsters.length}, split: Elves: ${monsters.filter(m => m.type === 'E').length}, Goblins: ${monsters.filter(m => m.type === 'G').length}`)
-
     const createNavigationObject = str => {
         const data = str.split(',').map(Number)
         return {
@@ -41,7 +32,7 @@
 
     const getMonster = ({ x, y }) => monsters.find(m => m.x === x && m.y === y)
     const isInsideArena = (x, y) => x >= 0 && y >= 0 && x < arenaWidth && y < arenaHeight
-    const isEmpty = ({ x, y }) => arena[x][y] === '.' && !getMonster({ x, y })
+    const isEmpty = ({ x, y }) => arena[x][y] === '.' && (!getMonster({ x, y }) || getMonster({ x, y }).dead)
     const compareSquares = (a, b) => a.x === b.x && a.y === b.y 
     // Returns neighbors in initiative order
     const getNeighboringSquares = ({ x, y }) => {
@@ -55,7 +46,7 @@
     const getEmptyNeighbors = ({ x, y }) => getNeighboringSquares({ x, y }).filter(isEmpty)
     const getNeighboringEnemies = ({ x, y, type }) => {
         const squares = getNeighboringSquares({ x, y })
-        return monsters.filter(m => squares.find(sq => compareSquares(sq, m)) && m.type !== type)
+        return monsters.filter(m => squares.find(sq => compareSquares(sq, m)) && m.type !== type && !m.dead)
     }
 
     const getTarget = ({ x, y, type }) => {
@@ -73,25 +64,32 @@
 
         target.hitPoints -= 3
         if (target.hitPoints <= 0) {
-            monsters.splice(monsters.indexOf(target), 1)
-            console.log('PEW! Monster ded1!!')
+            target.dead = true
+            if (verbose) console.log(monster, ' killed ', target)
         }
         return true
     }
     const startApp = () => { 
+        if (verbose) console.log('Initially')
+        if (verbose) printArena()
 
         let rounds = 0
         while (true) {
-            rounds ++
-            console.log('Starting round', rounds)
-            // if (rounds > 4) break
-
+            if (verbose) console.log('Starting round', rounds)
+            
             monsters.sort((a, b) => a.initiative - b.initiative)
+            // if (verbose) console.log('Monsters for this round ', monsters.map(m => `${m.type}-${m.x},${m.y}-${m.hitPoints}-${m.initiative}`).join(' | '))
             monsters.forEach(monster => {
+                if (monster.dead) return
+                
+                if (monsters.filter(m => m.type === 'E' && !m.dead).length === 0 || monsters.filter(m => m.type === 'G' && !m.dead).length === 0) {
+                    return
+                }
+
                 if (attack(monster)) return
 
                 const targets = monsters.reduce((res, monster2) => {
-                    if (monster2.type === monster.type) return res
+                    if (monster2.type === monster.type || monster2.dead) return res
                      // We can put monster2 here coz it has x and y props
                     res = [...res, ...getEmptyNeighbors(monster2)]
                     return res
@@ -102,7 +100,7 @@
 
                 // Sort targets from last to first, so that ties favor first
                 targets.sort((a, b) => getInitiative(b.x, b.y) - getInitiative(a.x, a.y))
-
+                
                 let closesetPath
                 targets.forEach(target => {
                     const pathToTarget = A_Star(createNavigationIndex(monster), createNavigationIndex(target))
@@ -117,20 +115,54 @@
                 closesetPath.reverse()
 
                 const move = createNavigationObject(closesetPath[1])
-                // console.log(`Monster is moving from ${monster.x},${monster.y} to ${move.x},${move.y}`)
                 monster.x = move.x
                 monster.y = move.y
+                monster.initiative = getInitiative(monster.x, monster.y)
                 attack(monster)
             })
+
+            // Removed dead monsters form arena
+            monsters = monsters.filter(m => !m.dead)
+            rounds ++
+
+            if (rounds > 100) {
+                console.error('Game went on 100 rounds, abort abort!')
+                break
+            }
 
             // Check if game should end.
             if (monsters.filter(m => m.type === 'E').length === 0 || monsters.filter(m => m.type === 'G').length === 0) {
                 break
+            } else {
+                // if (verbose) console.log('End of round', rounds)
+                // if (verbose) printArena()
             }
         }
 
         const hitsLeft = monsters.reduce((res, monster) => res += monster.hitPoints, 0)
-        console.log(`Reuslt of this combat is ${hitsLeft * rounds} (${hitsLeft} * ${rounds})`)
+        if (verbose) console.log(`Reuslt of this combat is ${hitsLeft * rounds} (${hitsLeft} * ${rounds})`)
+        if (verbose) printArena()
+
+        return {
+            answer: hitsLeft * rounds,
+            fullRounds: rounds,
+            hitPoints: hitsLeft,
+            monsters: monsters.map(m => `${m.type}-${m.x},${m.y}-${m.hitPoints}`).join('|')
+        }
+    }
+
+    const printArena = () => {
+        for (let x = 0; x < arena.length; x++) {
+            let res = ''
+            let hpstat = '     | '
+            for (let y = 0; y < arena[x].length; y++) {
+                const mosnter = getMonster({ x, y }) || {}
+                if (mosnter.type === 'G') {res += 'G'; hpstat += `G(${mosnter.hitPoints}), `}
+                else if (mosnter.type === 'E') {res += 'E'; hpstat += `E(${mosnter.hitPoints}), `}
+                else res += arena[x][y]
+            }
+            console.log(res, hpstat)
+        }
     }
 
     // A Star related stuffs
@@ -156,7 +188,7 @@
         start = createNavigationObject(start)
         goal = createNavigationObject(goal)
 
-        return Math.abs(goal.x - start.x) + Math.abs(goal.y - start.y)
+        return Math.abs(goal.x - start.x) + Math.abs(goal.y - start.y) + getInitiative(start.x, start.y)
     }
 
     /** Finds the shortest path to a point 
@@ -210,9 +242,175 @@
             }
         }
     }
-    startApp()
+
+    return startApp()
+}
+
+// rawInput = document.querySelector("body pre").innerHTML.split("\n")
+// // Remove the last empty element from the array
+// rawInput.pop()
+// code(rawInput)
+
+/* Unit tests o.o */
+
+var totalTests = 0
+var passedTests = 0
+
+var createTest = (it) => {
+    totalTests++
+    console.log(`-- ${it}`)
+
+    return {
+        pass: () => {
+            console.log('%c-- -- passed', 'color: #0C0')
+            passedTests++
+        },
+        fail: (expected, got) => {
+            console.error(`-- -- failed, expected ${expected} but got ${got}`)
+        }
+    }
+}
+
+(() => {
+    let result = code(`#######,#.G...#,#...EG#,#.#.#G#,#..G#E#,#.....#,#######`.split(","))
+    console.log('Practice example')
+
+    let test = createTest('It should have 27730 as the answer')
+    if (result.answer === 27730) test.pass()
+    else test.fail(27730, result.answer)
+
+    test = createTest('It should have 47 rounds')
+    if (result.fullRounds === 47) test.pass()
+    else test.fail(47, result.fullRounds)
+
+    test = createTest('It should have 590 total hit points')
+    if (result.hitPoints === 590) test.pass()
+    else test.fail(590, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'G-1,1-200|G-2,2-131|G-3,5-59|G-5,5-200') test.pass()
+    else test.fail(result.monsters, 'G-1,1-200|G-2,2-131|G-3,5-59|G-5,5-200')
+
+    //
+    // Example 1 
+    //
+
+    result = code(`#######,#G..#E#,#E#E.E#,#G.##.#,#...#E#,#...E.#,#######`.split(","))
+    console.log('Example 1')
+
+    test = createTest('It should have 36334 as the answer')
+    if (result.answer === 36334) test.pass()
+    else test.fail(36334, result.answer)
+
+    test = createTest('It should have 37 rounds')
+    if (result.fullRounds === 37) test.pass()
+    else test.fail(37, result.fullRounds)
+
+    test = createTest('It should have 982 total hit points')
+    if (result.hitPoints === 982) test.pass()
+    else test.fail(982, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'E-1,5-200|E-2,1-197|E-3,2-185|E-4,1-200|E-4,5-200') test.pass()
+    else test.fail(result.monsters, 'E-1,5-200|E-2,1-197|E-3,2-185|E-4,1-200|E-4,5-200')
+
+    //
+    // Example 2
+    //
+
+    result = code(`#######,#E..EG#,#.#G.E#,#E.##E#,#G..#.#,#..E#.#,#######`.split(","))
+    console.log('Example 2')
+
+    test = createTest('It should have 39514 as the answer')
+    if (result.answer === 39514) test.pass()
+    else test.fail(39514, result.answer)
+
+    test = createTest('It should have 46 rounds')
+    if (result.fullRounds === 46) test.pass()
+    else test.fail(46, result.fullRounds)
+
+    test = createTest('It should have 859 total hit points')
+    if (result.hitPoints === 859) test.pass()
+    else test.fail(859, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'E-1,2-164|E-1,4-197|E-2,3-200|E-3,1-98|E-4,2-200') test.pass()
+    else test.fail(result.monsters, 'E-1,2-164|E-1,4-197|E-2,3-200|E-3,1-98|E-4,2-200')
+
+    //
+    // Example 3
+    //
+
+    result = code(`#######,#E.G#.#,#.#G..#,#G.#.G#,#G..#.#,#...E.#,#######`.split(','))
+    console.log('Example 3')
+
+    test = createTest('It should have 27755 as the answer')
+    if (result.answer === 27755) test.pass()
+    else test.fail(27755, result.answer)
+
+    test = createTest('It should have 35 rounds')
+    if (result.fullRounds === 35) test.pass()
+    else test.fail(35, result.fullRounds)
+
+    test = createTest('It should have 793 total hit points')
+    if (result.hitPoints === 793) test.pass()
+    else test.fail(793, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'G-1,1-200|G-1,3-98|G-2,3-200|G-4,5-95|G-5,4-200') test.pass()
+    else test.fail(result.monsters, 'G-1,1-200|G-1,3-98|G-2,3-200|G-4,5-95|G-5,4-200')
+
+    //
+    // Example 4
+    //
+
+    result = code(`#######,#.E...#,#.#..G#,#.###.#,#E#G#G#,#...#G#,#######`.split(','))
+    console.log('Example 4')
+
+    test = createTest('It should have 28944 as the answer')
+    if (result.answer === 28944) test.pass()
+    else test.fail(28944, result.answer)
+
+    test = createTest('It should have 54 rounds')
+    if (result.fullRounds === 54) test.pass()
+    else test.fail(54, result.fullRounds)
+
+    test = createTest('It should have 536 total hit points')
+    if (result.hitPoints === 536) test.pass()
+    else test.fail(536, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'G-2,3-200|G-5,1-98|G-5,3-38|G-5,5-200') test.pass()
+    else test.fail(result.monsters, 'G-2,3-200|G-5,1-98|G-5,3-38|G-5,5-200')
+
+    //
+    // Example 5
+    //
+
+    result = code(`#########,#G......#,#.E.#...#,#..##..G#,#...##..#,#...#...#,#.G...G.#,#.....G.#,#########`.split(','))
+    console.log('Example 5')
+
+    test = createTest('It should have 18740 as the answer')
+    if (result.answer === 18740) test.pass()
+    else test.fail(18740, result.answer)
+
+    test = createTest('It should have 20 rounds')
+    if (result.fullRounds === 20) test.pass()
+    else test.fail(20, result.fullRounds)
+
+    test = createTest('It should have 937 total hit points')
+    if (result.hitPoints === 937) test.pass()
+    else test.fail(937, result.hitPoints)
+
+    test = createTest('It should have the correct monsters')
+    if (result.monsters === 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200') test.pass()
+    else test.fail(result.monsters, 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200')
 })()
 
+if (totalTests === passedTests) console.log('%c-- -- --\n-- -- --\nAll tests passed', 'color: #0C0')
+else console.error(`Tests failed ${passedTests}/${totalTests}`)
 
-// 270504 was too high
-// Other guesses 355710, 307848 
+// 268315 was too high
+// Other guesses 355710, 307848, 270504
+
+// Was not a right answer 234608, 237274
