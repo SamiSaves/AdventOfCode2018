@@ -251,18 +251,15 @@ var code = (rawInput, verbose) => {
 var totalTests = 0
 var passedTests = 0
 
-var createTest = (it) => {
+var test = (msg, expect, result) => {
     totalTests++
-    console.log(`-- ${it}`)
+    console.log(`-- ${msg}`)
 
-    return {
-        pass: () => {
-            console.log('%c-- -- passed', 'color: #0C0')
-            passedTests++
-        },
-        fail: (expected, got) => {
-            console.error(`-- -- failed, expected ${expected} but got ${got}`)
-        }
+    if (expect === result) {
+        console.log('%c-- -- passed', 'color: #0C0')
+        passedTests++
+    } else {
+        console.error(`-- -- failed, expected ${expected} but got ${result}`)
     }
 }
 
@@ -270,22 +267,11 @@ var createTest = (it) => {
     let result = code(`#######,#.G...#,#...EG#,#.#.#G#,#..G#E#,#.....#,#######`.split(","))
     console.log('Practice example')
 
-    let test = createTest('It should have 27730 as the answer')
-    if (result.answer === 27730) test.pass()
-    else test.fail(27730, result.answer)
-
-    test = createTest('It should have 47 rounds')
-    if (result.fullRounds === 47) test.pass()
-    else test.fail(47, result.fullRounds)
-
-    test = createTest('It should have 590 total hit points')
-    if (result.hitPoints === 590) test.pass()
-    else test.fail(590, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'G-1,1-200|G-2,2-131|G-3,5-59|G-5,5-200') test.pass()
-    else test.fail(result.monsters, 'G-1,1-200|G-2,2-131|G-3,5-59|G-5,5-200')
-
+    test('It should have 27730 as the answer', 27730, result.answer)
+    test('It should have 47 rounds', 47, result.fullRounds)
+    test('It should have 590 total hit points', 590, result.hitPoints)
+    test('It should have the correct monsters', 'G-1,1-200|G-2,2-131|G-3,5-59|G-5,5-200', result.monsters)
+    
     //
     // Example 1 
     //
@@ -293,22 +279,11 @@ var createTest = (it) => {
     result = code(`#######,#G..#E#,#E#E.E#,#G.##.#,#...#E#,#...E.#,#######`.split(","))
     console.log('Example 1')
 
-    test = createTest('It should have 36334 as the answer')
-    if (result.answer === 36334) test.pass()
-    else test.fail(36334, result.answer)
-
-    test = createTest('It should have 37 rounds')
-    if (result.fullRounds === 37) test.pass()
-    else test.fail(37, result.fullRounds)
-
-    test = createTest('It should have 982 total hit points')
-    if (result.hitPoints === 982) test.pass()
-    else test.fail(982, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'E-1,5-200|E-2,1-197|E-3,2-185|E-4,1-200|E-4,5-200') test.pass()
-    else test.fail(result.monsters, 'E-1,5-200|E-2,1-197|E-3,2-185|E-4,1-200|E-4,5-200')
-
+    test('It should have 36334 as the answer', 36334, result.answer)
+    test('It should have 37 rounds', 37, result.fullRounds)
+    test('It should have 982 total hit points', 982, result.hitPoints)
+    test('It should have the correct monsters', 'E-1,5-200|E-2,1-197|E-3,2-185|E-4,1-200|E-4,5-200', result.monsters)
+    
     //
     // Example 2
     //
@@ -316,22 +291,11 @@ var createTest = (it) => {
     result = code(`#######,#E..EG#,#.#G.E#,#E.##E#,#G..#.#,#..E#.#,#######`.split(","))
     console.log('Example 2')
 
-    test = createTest('It should have 39514 as the answer')
-    if (result.answer === 39514) test.pass()
-    else test.fail(39514, result.answer)
-
-    test = createTest('It should have 46 rounds')
-    if (result.fullRounds === 46) test.pass()
-    else test.fail(46, result.fullRounds)
-
-    test = createTest('It should have 859 total hit points')
-    if (result.hitPoints === 859) test.pass()
-    else test.fail(859, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'E-1,2-164|E-1,4-197|E-2,3-200|E-3,1-98|E-4,2-200') test.pass()
-    else test.fail(result.monsters, 'E-1,2-164|E-1,4-197|E-2,3-200|E-3,1-98|E-4,2-200')
-
+    test('It should have 39514 as the answer', 39514, result.answer)
+    test('It should have 46 rounds', 46, result.fullRounds)
+    test('It should have 859 total hit points', 859, result.hitPoints)
+    test('It should have the correct monsters', 'E-1,2-164|E-1,4-197|E-2,3-200|E-3,1-98|E-4,2-200', result.monsters)
+    
     //
     // Example 3
     //
@@ -339,22 +303,11 @@ var createTest = (it) => {
     result = code(`#######,#E.G#.#,#.#G..#,#G.#.G#,#G..#.#,#...E.#,#######`.split(','))
     console.log('Example 3')
 
-    test = createTest('It should have 27755 as the answer')
-    if (result.answer === 27755) test.pass()
-    else test.fail(27755, result.answer)
-
-    test = createTest('It should have 35 rounds')
-    if (result.fullRounds === 35) test.pass()
-    else test.fail(35, result.fullRounds)
-
-    test = createTest('It should have 793 total hit points')
-    if (result.hitPoints === 793) test.pass()
-    else test.fail(793, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'G-1,1-200|G-1,3-98|G-2,3-200|G-4,5-95|G-5,4-200') test.pass()
-    else test.fail(result.monsters, 'G-1,1-200|G-1,3-98|G-2,3-200|G-4,5-95|G-5,4-200')
-
+    test('It should have 27755 as the answer', 27755, result.answer)
+    test('It should have 35 rounds', 35, result.fullRounds)
+    test('It should have 793 total hit points', 793, result.hitPoints)
+    test('It should have the correct monsters', 'G-1,1-200|G-1,3-98|G-2,3-200|G-4,5-95|G-5,4-200', result.monsters)
+    
     //
     // Example 4
     //
@@ -362,22 +315,11 @@ var createTest = (it) => {
     result = code(`#######,#.E...#,#.#..G#,#.###.#,#E#G#G#,#...#G#,#######`.split(','))
     console.log('Example 4')
 
-    test = createTest('It should have 28944 as the answer')
-    if (result.answer === 28944) test.pass()
-    else test.fail(28944, result.answer)
-
-    test = createTest('It should have 54 rounds')
-    if (result.fullRounds === 54) test.pass()
-    else test.fail(54, result.fullRounds)
-
-    test = createTest('It should have 536 total hit points')
-    if (result.hitPoints === 536) test.pass()
-    else test.fail(536, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'G-2,3-200|G-5,1-98|G-5,3-38|G-5,5-200') test.pass()
-    else test.fail(result.monsters, 'G-2,3-200|G-5,1-98|G-5,3-38|G-5,5-200')
-
+    test('It should have 28944 as the answer', 28944, result.answer)
+    test('It should have 54 rounds', 54, result.fullRounds)
+    test('It should have 536 total hit points', 536, result.hitPoints)
+    test('It should have the correct monsters', 'G-2,3-200|G-5,1-98|G-5,3-38|G-5,5-200', result.monsters)
+    
     //
     // Example 5
     //
@@ -385,21 +327,10 @@ var createTest = (it) => {
     result = code(`#########,#G......#,#.E.#...#,#..##..G#,#...##..#,#...#...#,#.G...G.#,#.....G.#,#########`.split(','))
     console.log('Example 5')
 
-    test = createTest('It should have 18740 as the answer')
-    if (result.answer === 18740) test.pass()
-    else test.fail(18740, result.answer)
-
-    test = createTest('It should have 20 rounds')
-    if (result.fullRounds === 20) test.pass()
-    else test.fail(20, result.fullRounds)
-
-    test = createTest('It should have 937 total hit points')
-    if (result.hitPoints === 937) test.pass()
-    else test.fail(937, result.hitPoints)
-
-    test = createTest('It should have the correct monsters')
-    if (result.monsters === 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200') test.pass()
-    else test.fail(result.monsters, 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200')
+    test('It should have 18740 as the answer', 18740, reuslt.answer)
+    test('It should have 20 rounds', 20, result.fullRounds)
+    test('It should have 937 total hit points', 937, result.hitPoints)
+    test('It should have the correct monsters', 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200', result.monsters)    
 })()
 
 if (totalTests === passedTests) {
