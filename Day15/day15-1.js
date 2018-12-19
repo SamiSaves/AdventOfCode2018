@@ -74,15 +74,17 @@ var code = (rawInput, verbose) => {
         if (verbose) printArena()
 
         let rounds = 0
+        let gameOver = false
         while (true) {
             if (verbose) console.log('Starting round', rounds)
             
             monsters.sort((a, b) => a.initiative - b.initiative)
             // if (verbose) console.log('Monsters for this round ', monsters.map(m => `${m.type}-${m.x},${m.y}-${m.hitPoints}-${m.initiative}`).join(' | '))
             monsters.forEach(monster => {
-                if (monster.dead) return
+                if (monster.dead || gameOver) return
                 
                 if (monsters.filter(m => m.type === 'E' && !m.dead).length === 0 || monsters.filter(m => m.type === 'G' && !m.dead).length === 0) {
+                    gameOver = true
                     return
                 }
 
@@ -120,23 +122,21 @@ var code = (rawInput, verbose) => {
                 monster.initiative = getInitiative(monster.x, monster.y)
                 attack(monster)
             })
-
+            
             // Removed dead monsters form arena
             monsters = monsters.filter(m => !m.dead)
+            
+            if (gameOver) break
+            
+            // It is a full round only if the game doesn't end during the mosnter turns
             rounds ++
-
+            
             if (rounds > 100) {
                 console.error('Game went on 100 rounds, abort abort!')
                 break
             }
-
-            // Check if game should end.
-            if (monsters.filter(m => m.type === 'E').length === 0 || monsters.filter(m => m.type === 'G').length === 0) {
-                break
-            } else {
-                // if (verbose) console.log('End of round', rounds)
-                // if (verbose) printArena()
-            }
+            // if (verbose) console.log('End of round', rounds)
+            // if (verbose) printArena()
         }
 
         const hitsLeft = monsters.reduce((res, monster) => res += monster.hitPoints, 0)
@@ -245,11 +245,6 @@ var code = (rawInput, verbose) => {
 
     return startApp()
 }
-
-// rawInput = document.querySelector("body pre").innerHTML.split("\n")
-// // Remove the last empty element from the array
-// rawInput.pop()
-// code(rawInput)
 
 /* Unit tests o.o */
 
@@ -407,7 +402,17 @@ var createTest = (it) => {
     else test.fail(result.monsters, 'G-1,2-137|G-2,1-200|G-2,3-200|G-3,2-200|G-5,2-200')
 })()
 
-if (totalTests === passedTests) console.log('%c-- -- --\n-- -- --\nAll tests passed', 'color: #0C0')
+if (totalTests === passedTests) {
+    console.log('%c-- -- --\n-- -- --\nAll tests passed', 'color: #0C0')
+    console.log('Executing the real app')
+    rawInput = document.querySelector("body pre").innerHTML.split("\n")
+    // Remove the last empty element from the array
+    rawInput.pop()
+    result = code(rawInput, true)
+    const alreadyTried = [355710, 307848, 270504, 268315, 234608, 237274]
+    if (!alreadyTried.includes(result.answer)) console.log('%c:thinking: maybe this is the answer', result.answer)
+    else console.error('This has already been guessed D:')
+}
 else console.error(`Tests failed ${passedTests}/${totalTests}`)
 
 // 268315 was too high
